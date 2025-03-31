@@ -10,13 +10,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { useToast } from "@/components/ui/use-toast"
+import { Toaster } from "@/components/ui/sonner"
 import { Search, AlertTriangle, Edit, Plus, Minus, X } from "lucide-react"
+import { toast } from "sonner";
 
 export default function InventoryPage() {
   const { products, inventoryAlerts, updateInventory, dismissAlert } = useStore()
   const [searchQuery, setSearchQuery] = useState("")
-  const { toast } = useToast()
 
   // Filter products based on search query
   const filteredProducts = products.filter(
@@ -37,14 +37,12 @@ export default function InventoryPage() {
     const newInventory = Math.max(0, product.inventory + change)
     updateInventory(productId, newInventory)
 
-    toast({
-      title: "Inventory updated",
-      description: `${product.name} inventory updated to ${newInventory} units.`,
-    })
+    toast(`${product.name} inventory updated to ${newInventory} units.`)
   }
 
   return (
     <div className="space-y-6">
+      <Toaster />
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Inventory Management</h1>
         <p className="text-muted-foreground">Track and update product inventory levels</p>

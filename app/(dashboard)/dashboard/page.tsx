@@ -417,8 +417,8 @@ export default function DashboardPage() {
         <div className="space-y-4">
           <h2 className="text-xl font-semibold">Inventory Alerts</h2>
           <div className="space-y-3">
-            {inventoryAlerts.map((alert) => (
-              <Alert key={alert.productId} variant="destructive">
+            {inventoryAlerts.map((alert, index) => (
+              <Alert key={`${alert.productId}-${index}`} variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <div className="flex-1">
                   <AlertTitle className="flex items-center justify-between">

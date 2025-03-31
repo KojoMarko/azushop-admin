@@ -8,8 +8,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "E-Commerce Admin Dashboard",
-  description: "Admin dashboard for managing products, orders, and inventory",
+  title: "Azushop Admin",
+  description: "Azushop Admin dashboard for managing products, orders, and inventory",
 }
 
 export default function RootLayout({

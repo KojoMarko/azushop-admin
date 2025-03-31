@@ -143,8 +143,8 @@ export default function UsersPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredUsers.map((user) => (
-                <TableRow key={user.id}>
+              filteredUsers.map((user, index) => (
+                <TableRow key={`${user.id}-${index}`}>
                   <TableCell className="font-medium">{user.username}</TableCell>
                   <TableCell>{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
@@ -206,8 +206,8 @@ export default function UsersPage() {
                       </div>
                     ) : (
                       <div className="space-y-4 p-4">
-                        {getUserActivityLogs(selectedUser.id).map((log) => (
-                          <div key={log.id} className="flex items-start gap-3 pb-3 border-b last:border-0">
+                        {getUserActivityLogs(selectedUser.id).map((log, index) => (
+                          <div key={`${log.id}-${index}`} className="flex items-start gap-3 pb-3 border-b last:border-0">
                             <div className="bg-muted p-2 rounded-full">{getActivityIcon(log.action)}</div>
                             <div className="flex-1">
                               <div className="flex items-center justify-between">

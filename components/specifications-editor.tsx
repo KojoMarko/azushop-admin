@@ -43,8 +43,8 @@ export function SpecificationsEditor({ value, onChange }: SpecificationsEditorPr
   return (
     <div className="space-y-4">
       <div className="flex flex-col gap-4">
-        {Object.entries(value).map(([key, val]) => (
-          <div key={key} className="flex items-center gap-2">
+        {Object.entries(value).map(([key, val], index) => (
+          <div key={`${key}-${index}`} className="flex items-center gap-2">
             <div className="flex-1">
               <Label className="text-xs text-muted-foreground">{key}</Label>
               <Input value={val} onChange={(e) => handleUpdateValue(key, e.target.value)} placeholder="Value" />

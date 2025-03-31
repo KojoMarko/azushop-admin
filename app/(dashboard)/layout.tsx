@@ -103,7 +103,7 @@ function DashboardNav() {
         <SheetContent side="left" className="w-64 p-0">
           <div className="flex flex-col h-full">
             <div className="p-4 border-b">
-              <h2 className="text-lg font-semibold">Admin Dashboard</h2>
+              <img src="/azushop-admin.svg" alt="Admin Dashboard" className="h-full w-full object-contain mx-auto" />
             </div>
             <div className="flex-1 overflow-auto py-2 px-4">
               <nav className="flex flex-col gap-1">
@@ -133,7 +133,7 @@ function DashboardNav() {
       <div className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 border-r">
         <div className="flex flex-col h-full">
           <div className="p-4 border-b">
-            <h2 className="text-lg font-semibold">Admin Dashboard</h2>
+            <img src="/azushop-admin.svg" alt="Admin Dashboard" className="h-full w-full object-contain mx-auto" />
           </div>
           <div className="flex-1 overflow-auto py-4 px-3">
             <nav className="flex flex-col gap-1">
@@ -197,9 +197,43 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
               </SheetTrigger>
             </Sheet>
           </div>
-          <div className="flex-1">
-            <h1 className="text-lg font-semibold">E-Commerce Admin</h1>
-          </div>
+            <div className="flex-1 flex items-center justify-between">
+            <h1 className="text-lg font-semibold">
+              {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </h1>
+            <script>
+              {`
+              setInterval(() => {
+                document.querySelector('h1').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+              }, 1000);
+              `}
+            </script>
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" aria-label="Notifications">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0H9"
+                />
+              </svg>
+              </Button>
+              <Button variant="ghost" size="icon" aria-label="Profile">
+              <img
+                src="/profile-placeholder.png"
+                alt="Profile"
+                className="h-8 w-8 rounded-full"
+              />
+              </Button>
+            </div>
+            </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Welcome, {user.username}</span>
           </div>

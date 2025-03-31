@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { connectToDatabase } from "@/lib/mongodb";
 import AdminUser from "@/models/AdminUser";
 import bcrypt from "bcryptjs";
@@ -23,6 +24,10 @@ export default NextAuth({
 
         return { id: user.id, name: user.name, email: user.email };
       },
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
   pages: { signIn: "/admin/login" },

@@ -1,3 +1,6 @@
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,13 +31,53 @@ export function RegisterForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"form">) {
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
   });
 
   const onSubmit = async (data: any) => {
-    // Handle the form submission logic here
-    console.log(data);
+    try {
+      setIsSubmitting(true);
+      
+      // Send form data to API to generate OTP and send email
+      const response = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to send OTP');
+      }
+      
+      // Store user data in sessionStorage to retrieve on OTP page
+      // Don't store password in plain text in sessionStorage in production!
+      // This is just for demonstration - in production use a more secure approach
+      sessionStorage.setItem('registrationData', JSON.stringify({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+      }));
+      
+      // Redirect to OTP verification page
+      router.push('/verify-otp');
+    } catch (error) {
+      console.error('Registration error:', error);
+      alert('Failed to send verification code. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -55,7 +98,7 @@ export function RegisterForm({
             {...register("name")}
             className="h-12 sm:h-14 text-lg sm:text-xl"
           />
-          {errors.name && <p className="text-red-500 text-xs">{errors.name.message}</p>}
+          {errors.name && <p className="text-red-500 text-xs">{errors.name.message as string}</p>}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="email">Email</Label>
@@ -66,7 +109,7 @@ export function RegisterForm({
             {...register("email")}
             className="h-12 sm:h-14 text-lg sm:text-xl"
           />
-          {errors.email && <p className="text-red-500 text-xs">{errors.email.message}</p>}
+          {errors.email && <p className="text-red-500 text-xs">{errors.email.message as string}</p>}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="password">Password</Label>
@@ -76,7 +119,7 @@ export function RegisterForm({
             {...register("password")}
             className="h-12 sm:h-14 text-lg sm:text-xl"
           />
-          {errors.password && <p className="text-red-500 text-xs">{errors.password.message}</p>}
+          {errors.password && <p className="text-red-500 text-xs">{errors.password.message as string}</p>}
         </div>
         <div className="grid gap-2">
           <Label htmlFor="confirm-password">Confirm Password</Label>
@@ -86,10 +129,14 @@ export function RegisterForm({
             {...register("confirmPassword")}
             className="h-12 sm:h-14 text-lg sm:text-xl"
           />
-          {errors.confirmPassword && <p className="text-red-500 text-xs">{errors.confirmPassword.message}</p>}
+          {errors.confirmPassword && <p className="text-red-500 text-xs">{errors.confirmPassword.message as string}</p>}
         </div>
-        <Button type="submit" className="w-full h-12 sm:h-14 text-lg sm:text-xl">
-          Sign Up
+        <Button 
+          type="submit" 
+          className="w-full h-12 sm:h-14 text-lg sm:text-xl"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Sending..." : "Sign Up"}
         </Button>
       </div>
       <div className="text-center text-sm sm:text-base">

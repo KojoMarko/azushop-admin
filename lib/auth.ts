@@ -1,6 +1,7 @@
 // lib/auth.ts
 import jwt from "jsonwebtoken";
 import nodemailer from "nodemailer";
+import crypto from "crypto";
 
 // Get the secret key from the environment variable
 const SECRET_KEY = process.env.JWT_SECRET || "fallback-secret-key";  // Use a fallback key in development
@@ -46,4 +47,32 @@ export const sendOtpEmail = async (email: string, otp: string) => {
     console.error("Error sending OTP email:", error);
     throw new Error("Failed to send OTP email");
   }
+};
+
+// Temporary in-memory store for OTPs (replace with a database in production)
+const otpStore: Record<string, { otp: string; expiresAt: number }> = {};
+
+// Generate and store OTP
+export const generateOtp = (email: string): string => {
+  const otp = crypto.randomInt(100000, 999999).toString();
+  const expiresAt = Date.now() + 10 * 60 * 1000; // OTP valid for 10 minutes
+  otpStore[email] = { otp, expiresAt };
+  return otp;
+};
+
+// Verify OTP
+export const verifyOtp = (email: string, otp: string): boolean => {
+  const record = otpStore[email];
+  if (!record) return false;
+  if (record.otp !== otp || record.expiresAt < Date.now()) {
+    delete otpStore[email]; // Remove expired or invalid OTP
+    return false;
+  }
+  delete otpStore[email]; // Remove OTP after successful verification
+  return true;
+};
+
+// Sign JWT
+export const signJwt = (payload: any): string => {
+  return generateToken(payload);
 };

@@ -1,11 +1,109 @@
 "use client";
 
 import { OtpForm } from "@/components/otp-form";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export default function OtpPage() {
+  const router = useRouter();
+  const [countdown, setCountdown] = useState(600); // 10 minutes in seconds
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+
+  // Get registration data from sessionStorage and start the countdown
+  useEffect(() => {
+    const data = sessionStorage.getItem("registrationData");
+    if (!data) {
+      router.push("/register");
+      return;
+    }
+    const parsedData = JSON.parse(data);
+    setUserEmail(parsedData.email);
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [router]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  };
+
+  const handleResendOTP = async () => {
+    try {
+      setIsSubmitting(true);
+      const data = JSON.parse(sessionStorage.getItem("registrationData") || "{}");
+
+      const response = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to resend OTP");
+      }
+
+      setCountdown(600); // Reset countdown
+      setError(""); // Clear error message
+    } catch (error) {
+      console.error("Error resending OTP:", error);
+      setError("Failed to resend verification code");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleOtpSubmit = async (otp: string) => {
-    // Handle OTP verification logic here
-    console.log("Submitted OTP:", otp);
+    if (otp.length !== 6) {
+      setError("Please enter a valid 6-digit code");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      setError("");
+
+      const data = JSON.parse(sessionStorage.getItem("registrationData") || "{}");
+
+      const response = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: data.email,
+          otp,
+          userData: data,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "OTP verification failed");
+      }
+
+      sessionStorage.removeItem("registrationData");
+      router.push("/dashboard"); // Redirect to dashboard or home
+    } catch (error) {
+      console.error("Verification error:", error);
+      setError(error.message || "Invalid verification code");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -13,16 +111,30 @@ export default function OtpPage() {
       <div className="flex flex-col gap-4 p-3 md:p-5">
         <div className="flex justify-center md:justify-start">
           <div className="flex h-40 w-40 items-center justify-center">
-            <img src="/azushop-admin.svg" alt="Azushop Admin Logo" className="h-40 w-40" />
+            <img
+              src="/azushop-admin.svg"
+              alt="Azushop Admin Logo"
+              className="h-40 w-40"
+            />
           </div>
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-sm sm:max-w-md">
-            <h1 className="text-2xl font-bold text-center mb-4">Verify Your Account</h1>
+            <h1 className="text-2xl font-bold text-center mb-4">
+              Verify Your Account
+            </h1>
             <p className="text-sm text-center text-muted-foreground mb-6">
               Enter the OTP sent to your email to verify your account.
             </p>
-            <OtpForm onSubmit={handleOtpSubmit} />
+
+            <OtpForm
+              onSubmit={handleOtpSubmit}
+              error={error}
+              countdown={countdown}
+              formatTime={formatTime}
+              handleResendOTP={handleResendOTP}
+              isSubmitting={isSubmitting}
+            />
           </div>
         </div>
       </div>

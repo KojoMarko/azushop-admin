@@ -33,6 +33,7 @@ export function RegisterForm({
 }: React.ComponentPropsWithoutRef<"form">) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [serverError, setServerError] = useState("");
   
   const { register, handleSubmit, formState: { errors } } = useForm({
     resolver: zodResolver(schema),
@@ -41,8 +42,14 @@ export function RegisterForm({
   const onSubmit = async (data: any) => {
     try {
       setIsSubmitting(true);
+      setServerError(""); // Clear any previous errors
       
-      // Send form data to API to generate OTP and send email
+      console.log('Sending data to /api/auth/send-otp:', {
+        name: data.name,
+        email: data.email,
+        password: data.password,
+      });
+
       const response = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: {
@@ -56,25 +63,24 @@ export function RegisterForm({
       });
 
       const result = await response.json();
-      
+      console.log('Response from /api/auth/send-otp:', result);
+
       if (!response.ok) {
         throw new Error(result.message || 'Failed to send OTP');
       }
       
       // Store user data in sessionStorage to retrieve on OTP page
-      // Don't store password in plain text in sessionStorage in production!
-      // This is just for demonstration - in production use a more secure approach
       sessionStorage.setItem('registrationData', JSON.stringify({
         name: data.name,
         email: data.email,
         password: data.password,
       }));
       
-      // Redirect to OTP verification page
-      router.push('/verify-otp');
+      // Redirect to OTP verification page - fix the path here
+      router.push('/otp');
     } catch (error) {
       console.error('Registration error:', error);
-      alert('Failed to send verification code. Please try again.');
+      setServerError(error instanceof Error ? error.message : 'Failed to send verification code');
     } finally {
       setIsSubmitting(false);
     }
@@ -88,6 +94,13 @@ export function RegisterForm({
           Enter your details to sign up.
         </p>
       </div>
+      
+      {serverError && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          {serverError}
+        </div>
+      )}
+      
       <div className="grid gap-4">
         <div className="grid gap-2">
           <Label htmlFor="name">Name</Label>
@@ -136,7 +149,7 @@ export function RegisterForm({
           className="w-full h-12 sm:h-14 text-lg sm:text-xl"
           disabled={isSubmitting}
         >
-          {isSubmitting ? "Sending..." : "Sign Up"}
+          {isSubmitting ? "Sending verification code..." : "Sign Up"}
         </Button>
       </div>
       <div className="text-center text-sm sm:text-base">

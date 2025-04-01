@@ -1,8 +1,8 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
-import { connectToDatabase } from "../../lib/mongodb";
-import AdminUser from "../../models/AdminUser";
+import { connectToDatabase } from "@/lib/mongodb";
+import AdminUser from "@/models/AdminUser";
 import bcrypt from "bcryptjs";
 import type { DefaultSession, NextAuthOptions } from "next-auth";
 

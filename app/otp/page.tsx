@@ -1,8 +1,9 @@
 "use client";
 
-import { OtpForm } from "@/components/otp-form";
+import OtpForm from "@/components/otp-form";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import { signIn } from "next-auth/react";
 
 export default function OtpPage() {
   const router = useRouter();
@@ -78,15 +79,15 @@ export default function OtpPage() {
       setIsSubmitting(true);
       setError("");
 
-      const data = JSON.parse(sessionStorage.getItem("registrationData") || "{}");
+      const registrationData = JSON.parse(sessionStorage.getItem("registrationData") || "{}");
 
       const response = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: data.email,
+          email: registrationData.email,
           otp,
-          userData: data,
+          userData: registrationData,
         }),
       });
 
@@ -96,8 +97,31 @@ export default function OtpPage() {
         throw new Error(result.message || "OTP verification failed");
       }
 
+      // Remove registration data from session storage
       sessionStorage.removeItem("registrationData");
-      router.push("/dashboard"); // Redirect to dashboard or home
+      
+      // Store token for client-side auth if returned
+      if (result.token) {
+        localStorage.setItem("authToken", result.token);
+      }
+      
+      // Use NextAuth to create a session
+      const loginResult = await signIn("credentials", {
+        redirect: false,
+        email: registrationData.email,
+        password: registrationData.password
+      });
+      
+      if (loginResult?.error) {
+        console.log("Auto-login error:", loginResult.error);
+        // If auto-login fails, direct to login page
+        router.push("/login?verified=true");
+        return;
+      }
+      
+      // Success! Direct user to dashboard
+      router.push("/dashboard");
+      
     } catch (error) {
       console.error("Verification error:", error);
       if (error instanceof Error) {

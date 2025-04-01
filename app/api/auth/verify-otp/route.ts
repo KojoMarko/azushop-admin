@@ -1,8 +1,8 @@
-// /app/api/auth/verify-otp/route.ts
+// app/api/auth/verify-otp/route.ts
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import AdminUser from "@/models/AdminUser";
-import { verifyOtp, signJwt } from "@/lib/auth";
+import { verifyOtp } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
@@ -29,47 +29,52 @@ export async function POST(req: Request) {
     await connectToDatabase();
     
     // Check if the user already exists
-    const existingUser = await AdminUser.findOne({ email });
-    if (existingUser) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "User with this email already exists" 
-      }, { status: 400 });
+    let user = await AdminUser.findOne({ email });
+    
+    if (user) {
+      // If user already exists but isn't verified, update verification status
+      if (!user.verified) {
+        user.verified = true;
+        await user.save();
+      } else {
+        return NextResponse.json({ 
+          success: false, 
+          message: "User with this email already exists and is verified" 
+        }, { status: 400 });
+      }
+    } else {
+      // Ensure we have the user data
+      if (!userData || !userData.name || !userData.email || !userData.password) {
+        return NextResponse.json({ 
+          success: false, 
+          message: "User data is incomplete" 
+        }, { status: 400 });
+      }
+      
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      
+      // Create the new user
+      user = await AdminUser.create({
+        name: userData.name,
+        email: userData.email,
+        password: hashedPassword,
+        verified: true,
+        createdAt: new Date()
+      });
     }
     
-    // Ensure we have the user data
-    if (!userData || !userData.name || !userData.email || !userData.password) {
-      return NextResponse.json({ 
-        success: false, 
-        message: "User data is incomplete" 
-      }, { status: 400 });
-    }
-    
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(userData.password, 10);
-    
-    // Create the new user
-    const newUser = await AdminUser.create({
-      name: userData.name,
-      email: userData.email,
-      password: hashedPassword,
-      verified: true,
-      createdAt: new Date()
-    });
-    
-    // Generate a JWT token for the user
-    const token = signJwt({ 
-      id: newUser._id, 
-      name: newUser.name,
-      email: newUser.email
-    });
-    
-    // Return success response with token
+    // Return success response without JWT token - let NextAuth handle auth
     return NextResponse.json({ 
       success: true, 
       message: "Email verified successfully! Your account has been created.",
-      token
+      user: {
+        id: user._id.toString(),
+        name: user.name,
+        email: user.email
+      }
     });
+    
   } catch (error) {
     console.error("Error verifying OTP:", error);
     

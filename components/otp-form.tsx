@@ -14,7 +14,7 @@ interface OtpFormProps {
   isSubmitting: boolean;
 }
 
-export function OtpForm({
+export default function OtpForm({
   onSubmit,
   error,
   countdown,
@@ -43,6 +43,9 @@ export function OtpForm({
           placeholder="Enter the OTP sent to your email"
           required
           className="h-16 text-2xl"
+          maxLength={6}
+          pattern="[0-9]*"
+          inputMode="numeric"
         />
       </div>
 
@@ -67,6 +70,7 @@ export function OtpForm({
         </p>
 
         <button
+          type="button"
           onClick={handleResendOTP}
           disabled={isSubmitting || countdown > 540} // Allow resend after 1 minute
           className="mt-2 text-blue-600 hover:underline disabled:text-gray-400 disabled:no-underline"

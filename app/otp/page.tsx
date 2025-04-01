@@ -100,7 +100,11 @@ export default function OtpPage() {
       router.push("/dashboard"); // Redirect to dashboard or home
     } catch (error) {
       console.error("Verification error:", error);
-      setError(error.message || "Invalid verification code");
+      if (error instanceof Error) {
+        setError(error.message || "Invalid verification code");
+      } else {
+        setError("An unknown error occurred");
+      }
     } finally {
       setIsSubmitting(false);
     }

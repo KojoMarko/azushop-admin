@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { useAuth } from "@/app/contexts/auth-context"
@@ -10,7 +10,6 @@ import { AuthProvider } from "@/app/contexts/auth-context"
 import { LayoutDashboard, Package, ShoppingCart, BarChart3, LogOut, Menu, Tags, Layers, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { useState } from "react"
 import { cn } from "@/lib/utils"
 
 interface NavItemProps {
@@ -161,26 +160,36 @@ function DashboardNav() {
 }
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth()
-  const router = useRouter()
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+  const [currentTime, setCurrentTime] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.push("/login")
-    }
-  }, [user, isLoading, router])
+    setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    console.log("DashboardLayout rendered. User:", user, "IsLoading:", isLoading);
+  }, [user, isLoading]);
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
-    )
+    );
   }
 
   if (!user) {
-    return null
+    return null;
   }
+
+  const displayTime = currentTime || "--:--:--";
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -197,51 +206,46 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
               </SheetTrigger>
             </Sheet>
           </div>
-            <div className="flex-1 flex items-center justify-between">
+          <div className="flex-1 flex items-center justify-between">
             <h1 className="text-lg font-semibold">
-              {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              {displayTime}
             </h1>
-            <script>
-              {`
-              setInterval(() => {
-                document.querySelector('h1').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-              }, 1000);
-              `}
-            </script>
             <div className="flex items-center gap-4">
               <Button variant="ghost" size="icon" aria-label="Notifications">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0H9"
-                />
-              </svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0m6 0H9"
+                  />
+                </svg>
               </Button>
               <Button variant="ghost" size="icon" aria-label="Profile">
-              <img
-                src="/profile-placeholder.png"
-                alt="Profile"
-                className="h-8 w-8 rounded-full"
-              />
+                <img
+                  src="/profile-placeholder.png"
+                  alt="Profile"
+                  className="h-8 w-8 rounded-full"
+                />
               </Button>
             </div>
-            </div>
+          </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Welcome, {user.username}</span>
+            <span className="text-sm text-muted-foreground">
+              Welcome, {user?.name || user?.email || "User"}
+            </span>
           </div>
         </header>
         <main className="flex-1 p-4 lg:p-6">{children}</main>
       </div>
     </div>
-  )
+  );
 }
 
 export default function DashboardRootLayout({
@@ -255,4 +259,3 @@ export default function DashboardRootLayout({
     </AuthProvider>
   )
 }
-

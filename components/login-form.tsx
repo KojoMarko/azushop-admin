@@ -37,7 +37,6 @@ export function LoginForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
     setIsLoading(true);
 
     try {
@@ -49,25 +48,30 @@ export function LoginForm({
 
       if (result?.error) {
         let errorMessage = result.error;
-        
+
         // Make error messages more user-friendly
         if (result.error === "CredentialsSignin") {
           errorMessage = "Invalid email or password";
         } else if (result.error.includes("verify")) {
           errorMessage = "Please verify your email before logging in. Check your inbox for a verification code.";
         }
-        
+
         setError(errorMessage);
         setIsLoading(false);
         return;
       }
 
+      // Store user data in localStorage after successful login
+      const user = { email: formData.email }; // Add more user details if available
+      localStorage.setItem("admin-user", JSON.stringify(user));
+
       // Successful login, redirect to dashboard
+      console.log("Login successful. Redirecting to dashboard...");
       router.push("/dashboard");
-      router.refresh(); // Refresh to update session state if needed, consider if this is necessary
     } catch (error) {
       console.error("Login submission error:", error);
       setError("An unexpected error occurred during login");
+    } finally {
       setIsLoading(false);
     }
   };

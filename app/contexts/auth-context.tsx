@@ -6,6 +6,8 @@ type User = {
   id: string
   username: string
   role: "admin"
+  name?: string
+  email?: string
 }
 
 interface AuthContextType {
@@ -22,13 +24,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Check if user is already logged in
-    const storedUser = localStorage.getItem("admin-user")
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
+    try {
+      const storedUser = localStorage.getItem("admin-user");
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error("Error parsing stored user from localStorage:", error);
+      localStorage.removeItem("admin-user"); // Clear invalid data
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false)
-  }, [])
+  }, []);
 
   const login = async (username: string, password: string) => {
     // Simulate API call
@@ -55,6 +62,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null)
     localStorage.removeItem("admin-user")
+  }
+
+  useEffect(() => {
+    console.log("AuthProvider initialized. User:", user, "IsLoading:", isLoading);
+  }, [user, isLoading]);
+
+  if (typeof window === "undefined") {
+    return <>{children}</>;
   }
 
   return <AuthContext.Provider value={{ user, login, logout, isLoading }}>{children}</AuthContext.Provider>

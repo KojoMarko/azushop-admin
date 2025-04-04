@@ -88,13 +88,17 @@ const authOptions: NextAuthOptions = {
       // Add user data to token when signing in
       if (user) {
         token.id = user.id;
+        token.name = user.name; // Add the name to the token
+        token.email = user.email; // Ensure email is also stored
       }
       return token;
     },
     async session({ session, token }) {
-      // Add user ID to session
+      // Add user data to session
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.name = token.name as string; // Add the name to the session
+        session.user.email = token.email as string; // Ensure email is also stored
       }
       return session;
     },

@@ -107,9 +107,9 @@ function DashboardNav() {
             </div>
             <div className="flex-1 overflow-auto py-2 px-4">
               <nav className="flex flex-col gap-1">
-                {navItems.map((item, index) => (
+                {navItems.map((item) => (
                   <NavItem
-                    key={`${item.href}-${index}`}
+                    key={item.href}
                     href={item.href}
                     icon={item.icon}
                     title={item.title}
@@ -137,9 +137,9 @@ function DashboardNav() {
           </div>
           <div className="flex-1 overflow-auto py-4 px-3">
             <nav className="flex flex-col gap-1">
-              {navItems.map((item, index) => (
+              {navItems.map((item) => (
                 <NavItem
-                  key={`${item.href}-${index}`}
+                  key={item.href}
                   href={item.href}
                   icon={item.icon}
                   title={item.title}

@@ -1,11 +1,12 @@
 "use client"
 
 import type React from "react"
+import axios from "axios"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { useStore, type Product } from "@/lib/store"
+import { useStore, type Product } from "@/lib/store" // Ensure store provides unique IDs
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -24,19 +25,22 @@ interface ProductFormProps {
 
 export default function ProductForm({ product, isEditing = false }: ProductFormProps) {
   const router = useRouter()
-  const { addProduct, updateProduct, categories, subcategories, brands } = useStore()
+  const { categories, subcategories, brands } = useStore() // <<< PROBLEM IS LIKELY IN THE DATA HERE
 
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     price: "",
-    image: "",
+    image: "", // Ensure `image` is included here
     inventory: "",
     categoryId: "",
     subcategoryId: "",
     brandId: "",
     specifications: {} as Record<string, string>,
   })
+
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imageUrl, setImageUrl] = useState<string | null>(null); // For previewing existing or newly uploaded images
 
   const [errors, setErrors] = useState({
     name: "",
@@ -45,7 +49,26 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
     inventory: "",
     categoryId: "",
     brandId: "",
+    image: "", // Add image error state if needed
   })
+
+  // --- Debugging useEffect to check category data ---
+  useEffect(() => {
+    console.log("Raw Categories data from store:", JSON.stringify(categories, null, 2));
+    if (categories && categories.length > 0) {
+        const ids = categories.map(c => c.id);
+        const uniqueIds = new Set(ids);
+        if (ids.length !== uniqueIds.size) {
+          console.error("🔴 DUPLICATE CATEGORY IDs DETECTED IN categories ARRAY:", categories);
+          // Find the duplicates
+          const duplicateIds = ids.filter((item, index) => ids.indexOf(item) !== index);
+          console.error("🔴 Duplicate IDs:", duplicateIds);
+        } else {
+          console.log("🟢 No duplicate category IDs found.");
+        }
+    }
+  }, [categories]);
+  // --- End Debugging useEffect ---
 
   // Filter subcategories based on selected category
   const filteredSubcategories = subcategories.filter((sub) => sub.categoryId === formData.categoryId)
@@ -57,15 +80,36 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
         name: product.name,
         description: product.description,
         price: product.price.toString(),
-        image: product.image,
+        image: product.image || "", // Keep existing image URL if editing
         inventory: product.inventory.toString(),
         categoryId: product.categoryId,
-        subcategoryId: product.subcategoryId,
+        subcategoryId: product.subcategoryId || "", // Ensure subcategoryId is handled
         brandId: product.brandId,
         specifications: product.specifications || {},
       })
+      // Set initial image preview if editing and image exists
+      if (product.image) {
+        setImageUrl(product.image);
+      }
     }
   }, [isEditing, product])
+
+  // Effect to create object URL for previewing newly selected file
+  useEffect(() => {
+    if (imageFile) {
+      const objectUrl = URL.createObjectURL(imageFile);
+      setImageUrl(objectUrl);
+
+      // Clean up the object URL when the component unmounts or file changes
+      return () => URL.revokeObjectURL(objectUrl);
+    } else if (isEditing && product?.image) {
+        // If file is cleared, revert to original image if editing
+        setImageUrl(product.image);
+    } else {
+        setImageUrl(null); // Clear preview if no file and not editing/no original image
+    }
+  }, [imageFile, isEditing, product]);
+
 
   const validateForm = () => {
     let valid = true
@@ -76,6 +120,7 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
       inventory: "",
       categoryId: "",
       brandId: "",
+      image: "",
     }
 
     if (!formData.name.trim()) {
@@ -83,10 +128,15 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
       valid = false
     }
 
-    if (!formData.description.trim()) {
-      newErrors.description = "Product description is required"
-      valid = false
+    // Add validation for description if needed (e.g., minimum length)
+    // For now, just checking if it exists (though RichTextEditor might handle empty state)
+    if (!formData.description || formData.description === '<p><br></p>' || formData.description.trim() === "") {
+       // Example check for empty state from some rich text editors
+       // newErrors.description = "Product description is required"
+       // valid = false
+       // Decide if description is truly mandatory
     }
+
 
     if (!formData.price.trim()) {
       newErrors.price = "Price is required"
@@ -100,7 +150,7 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
       newErrors.inventory = "Inventory quantity is required"
       valid = false
     } else if (isNaN(Number.parseInt(formData.inventory)) || Number.parseInt(formData.inventory) < 0) {
-      newErrors.inventory = "Inventory must be a non-negative number"
+      newErrors.inventory = "Inventory must be a non-negative integer"
       valid = false
     }
 
@@ -114,23 +164,20 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
       valid = false
     }
 
+    // Add image validation if needed (e.g., required for new products)
+    // if (!isEditing && !imageFile) {
+    //   newErrors.image = "Product image is required";
+    //   valid = false;
+    // }
+
     setErrors(newErrors)
     return valid
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
 
-    // If changing category, reset subcategory
-    if (name === "categoryId") {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-        subcategoryId: "",
-      }))
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }))
-    }
+    setFormData((prev) => ({ ...prev, [name]: value }))
 
     // Clear error when user types
     if (errors[name as keyof typeof errors]) {
@@ -139,27 +186,26 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
   }
 
   const handleSelectChange = (name: string, value: string) => {
-    // If changing category, reset subcategory
-    if (name === "categoryId") {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-        subcategoryId: "",
-      }))
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }))
-    }
+    // console.log(`handleSelectChange called with name: ${name}, value: ${value}`);
+    setFormData((prev) => {
+      const newState = { ...prev, [name]: value };
+      // If changing category, reset subcategory
+      if (name === "categoryId") {
+        newState.subcategoryId = "";
+      }
+      return newState;
+    });
 
     // Clear error when user selects
     if (errors[name as keyof typeof errors]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }))
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
-  }
+  };
 
   const handleDescriptionChange = (value: string) => {
     setFormData((prev) => ({ ...prev, description: value }))
 
-    // Clear error when user types
+    // Clear description error if user interacts
     if (errors.description) {
       setErrors((prev) => ({ ...prev, description: "" }))
     }
@@ -169,37 +215,87 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
     setFormData((prev) => ({ ...prev, specifications: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null
+    setImageFile(file) // Store the File object
+
+     // Clear image error if user interacts
+     if (errors.image) {
+        setErrors((prev) => ({ ...prev, image: "" }))
+      }
+  }
+
+  // Function to upload image to Cloudinary (or your storage)
+  const uploadImage = async (file: File): Promise<string | null> => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!); // Ensure you have this preset in Cloudinary and the env variable set
+
+      try {
+          const response = await axios.post(
+              `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!}/image/upload`, // Ensure you have cloud name env var
+              formData
+          );
+          return response.data.secure_url; // Return the URL of the uploaded image
+      } catch (error) {
+          console.error("Error uploading image:", error);
+          toast.error("Image upload failed. Please try again.");
+          return null;
+      }
+  };
+
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
     if (!validateForm()) {
-      return
+      toast.error("Please fix the errors in the form.");
+      return;
     }
 
+    let uploadedImageUrl = formData.image; // Keep existing image URL by default
+
+    // If a new file was selected, upload it
+    if (imageFile) {
+        const result = await uploadImage(imageFile);
+        if (!result) {
+            // Upload failed, error already shown by uploadImage function
+            return;
+        }
+        uploadedImageUrl = result; // Use the new image URL
+    }
+
+
     try {
+      // Use correct types for price and inventory
       const productData = {
-        name: formData.name,
-        description: formData.description,
-        price: Number.parseFloat(formData.price),
-        image: formData.image || "/placeholder.svg?height=200&width=200",
-        inventory: Number.parseInt(formData.inventory),
+        name: formData.name.trim(),
+        description: formData.description, // Assuming RichTextEditor provides safe HTML or markdown
+        price: parseFloat(formData.price),
+        inventory: parseInt(formData.inventory, 10),
         categoryId: formData.categoryId,
-        subcategoryId: formData.subcategoryId,
+        subcategoryId: formData.subcategoryId || null, // Send null if empty
         brandId: formData.brandId,
         specifications: formData.specifications,
-      }
+        image: uploadedImageUrl, // Use the potentially updated image URL
+      };
 
       if (isEditing && product) {
-        updateProduct(product.id, productData)
-        toast.success(`${productData.name} has been updated successfully.`)
+        // Make sure your API can handle receiving 'id' in the payload for PUT
+        await axios.put("/api/products", { id: product.id, ...productData });
+        toast.success(`Product "${productData.name}" has been updated successfully.`);
       } else {
-        addProduct(productData)
-        toast.success(`${productData.name} has been added to your catalog.`)
+        await axios.post("/api/products", productData);
+        toast.success(`Product "${productData.name}" has been added successfully.`);
       }
 
-      router.push("/dashboard/products")
-    } catch (error) {
-      toast.error("There was an error saving the product.")
+      router.push("/dashboard/products"); // Navigate back to product list
+      router.refresh(); // Optional: Force refresh of the product list page data
+
+    } catch (error: any) {
+      console.error("Error saving product:", error);
+      const errorMessage = error.response?.data?.message || "There was an error saving the product.";
+      toast.error(errorMessage);
     }
   }
 
@@ -212,8 +308,10 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
           <TabsTrigger value="image">Image</TabsTrigger>
         </TabsList>
 
+        {/* Basic Information Tab */}
         <TabsContent value="basic" className="space-y-6 pt-4">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-8 md:grid-cols-2">
+            {/* Column 1 */}
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Product Name</Label>
@@ -230,13 +328,19 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
 
               <div className="space-y-2">
                 <Label htmlFor="categoryId">Category</Label>
-                <Select value={formData.categoryId} onValueChange={(value) => handleSelectChange("categoryId", value)}>
+                <Select
+                    value={formData.categoryId}
+                    onValueChange={(value) => handleSelectChange("categoryId", value)}
+                    name="categoryId"
+                >
                   <SelectTrigger id="categoryId" className={errors.categoryId ? "border-red-500" : ""}>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
+                      // This key generation is correct.
+                      // Ensure category.id is unique in the `categories` array itself.
+                      <SelectItem key={`category-${category.id}`} value={category.id}>
                         {category.name}
                       </SelectItem>
                     ))}
@@ -246,11 +350,12 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="subcategoryId">Subcategory</Label>
+                <Label htmlFor="subcategoryId">Subcategory (Optional)</Label>
                 <Select
                   value={formData.subcategoryId}
                   onValueChange={(value) => handleSelectChange("subcategoryId", value)}
                   disabled={!formData.categoryId || filteredSubcategories.length === 0}
+                  name="subcategoryId"
                 >
                   <SelectTrigger id="subcategoryId">
                     <SelectValue
@@ -265,23 +370,28 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
                   </SelectTrigger>
                   <SelectContent>
                     {filteredSubcategories.map((subcategory) => (
-                      <SelectItem key={subcategory.id} value={subcategory.id}>
+                      <SelectItem key={`subcategory-${subcategory.id}`} value={subcategory.id}>
                         {subcategory.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                 {/* No error message needed if optional */}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="brandId">Brand</Label>
-                <Select value={formData.brandId} onValueChange={(value) => handleSelectChange("brandId", value)}>
+                <Select
+                    value={formData.brandId}
+                    onValueChange={(value) => handleSelectChange("brandId", value)}
+                    name="brandId"
+                >
                   <SelectTrigger id="brandId" className={errors.brandId ? "border-red-500" : ""}>
                     <SelectValue placeholder="Select brand" />
                   </SelectTrigger>
                   <SelectContent>
                     {brands.map((brand) => (
-                      <SelectItem key={brand.id} value={brand.id}>
+                      <SelectItem key={`brand-${brand.id}`} value={brand.id}>
                         {brand.name}
                       </SelectItem>
                     ))}
@@ -291,6 +401,7 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
               </div>
             </div>
 
+            {/* Column 2 */}
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -300,7 +411,7 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
                     name="price"
                     type="number"
                     step="0.01"
-                    min="0"
+                    min="0.01" // Price should be positive
                     value={formData.price}
                     onChange={handleChange}
                     placeholder="0.00"
@@ -315,6 +426,7 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
                     id="inventory"
                     name="inventory"
                     type="number"
+                    step="1" // Inventory should be whole numbers
                     min="0"
                     value={formData.inventory}
                     onChange={handleChange}
@@ -324,10 +436,12 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
                   {errors.inventory && <p className="text-sm text-red-500">{errors.inventory}</p>}
                 </div>
               </div>
+              {/* Add other fields for column 2 if needed */}
             </div>
           </div>
         </TabsContent>
 
+        {/* Description & Specs Tab */}
         <TabsContent value="description" className="space-y-6 pt-4">
           <div className="space-y-4">
             <div className="space-y-2">
@@ -335,48 +449,55 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
               <RichTextEditor
                 value={formData.description}
                 onChange={handleDescriptionChange}
-                placeholder="Enter product description"
-                minHeight="200px"
+                placeholder="Enter detailed product description..."
+                minHeight="200px" // Example min height
               />
+              {/* You might want less strict validation here, or none if optional */}
               {errors.description && <p className="text-sm text-red-500">{errors.description}</p>}
             </div>
 
             <div className="space-y-2 pt-4">
-              <Label>Specifications</Label>
-              <SpecificationsEditor value={formData.specifications} onChange={handleSpecificationsChange} />
+              <Label>Specifications (Optional)</Label>
+              <SpecificationsEditor
+                value={formData.specifications}
+                onChange={handleSpecificationsChange}
+               />
             </div>
           </div>
         </TabsContent>
 
+        {/* Image Tab */}
         <TabsContent value="image" className="space-y-6 pt-4">
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="image">Product Image URL</Label>
+              <Label htmlFor="image-upload">Product Image</Label>
               <Input
-                id="image"
-                name="image"
-                value={formData.image}
-                onChange={handleChange}
-                placeholder="https://example.com/image.jpg"
+                id="image-upload" // Changed ID slightly to avoid conflict if reusing 'image'
+                name="imageFile" // Changed name to reflect it's the file input
+                type="file"
+                accept="image/png, image/jpeg, image/gif, image/webp" // Be specific about accepted types
+                onChange={handleFileChange}
+                className={errors.image ? "border-red-500" : ""}
               />
+              {errors.image && <p className="text-sm text-red-500">{errors.image}</p>}
               <p className="text-xs text-muted-foreground">
-                Enter a URL for the product image, or leave blank for a placeholder
+                Upload a new image or replace the existing one (if editing). JPG, PNG, GIF, WEBP accepted.
               </p>
             </div>
 
             <Card className="overflow-hidden">
               <CardContent className="p-0">
-                {formData.image ? (
-                  <div className="relative aspect-square w-full">
+                {imageUrl ? (
+                  <div className="relative aspect-square w-full max-w-md mx-auto"> {/* Added max-width and centering */}
                     <Image
-                      src={formData.image || "/placeholder.svg"}
+                      src={imageUrl} // Use the state variable for preview URL
                       alt="Product preview"
                       fill
-                      className="object-cover"
+                      className="object-contain" // Changed to contain to see the whole image
                     />
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center aspect-square bg-muted">
+                  <div className="flex items-center justify-center aspect-square bg-muted max-w-md mx-auto"> {/* Added max-width and centering */}
                     <div className="text-center p-4">
                       <ImagePlus className="h-10 w-10 mx-auto text-muted-foreground" />
                       <p className="text-sm text-muted-foreground mt-2">Image preview will appear here</p>
@@ -389,7 +510,8 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
         </TabsContent>
       </Tabs>
 
-      <div className="flex justify-end gap-4">
+      {/* Action Buttons */}
+      <div className="flex justify-end gap-4 pt-4">
         <Button type="button" variant="outline" onClick={() => router.push("/dashboard/products")}>
           Cancel
         </Button>
@@ -398,4 +520,3 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
     </form>
   )
 }
-

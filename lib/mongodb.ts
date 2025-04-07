@@ -6,6 +6,8 @@ if (!MONGODB_URI) {
   throw new Error("Please define the MONGODB_URI environment variable");
 }
 
+console.log("Connecting to MongoDB with URI:", MONGODB_URI);
+
 let cached = (global as any).mongoose || { conn: null, promise: null };
 
 export async function connectToDatabase() {

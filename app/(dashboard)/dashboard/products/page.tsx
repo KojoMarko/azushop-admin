@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import axios from "axios"
 import Link from "next/link"
 import Image from "next/image"
-import { useStore, type Product } from "@/lib/store"
+import { type Product } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -26,9 +27,22 @@ import {
 import { Plus, MoreHorizontal, Search, Edit, Trash } from "lucide-react"
 
 export default function ProductsPage() {
-  const { products, deleteProduct } = useStore()
+  const [products, setProducts] = useState<Product[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await axios.get("/api/products")
+        setProducts(response.data)
+      } catch (error) {
+        console.error("Error fetching products:", error)
+      }
+    }
+
+    fetchProducts()
+  }, [])
 
   // Filter products based on search query
   const filteredProducts = products.filter(
@@ -42,10 +56,15 @@ export default function ProductsPage() {
     setProductToDelete(product)
   }
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (productToDelete) {
-      deleteProduct(productToDelete.id)
-      setProductToDelete(null)
+      try {
+        await axios.delete(`/api/products?id=${productToDelete.id}`)
+        setProducts((prev) => prev.filter((p) => p.id !== productToDelete.id))
+        setProductToDelete(null)
+      } catch (error) {
+        console.error("Error deleting product:", error)
+      }
     }
   }
 

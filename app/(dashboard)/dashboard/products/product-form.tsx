@@ -186,7 +186,7 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
   }
 
   const handleSelectChange = (name: string, value: string) => {
-    // console.log(`handleSelectChange called with name: ${name}, value: ${value}`);
+    console.log(`handleSelectChange called with name: ${name}, value: ${value}`);
     setFormData((prev) => {
       const newState = { ...prev, [name]: value };
       // If changing category, reset subcategory

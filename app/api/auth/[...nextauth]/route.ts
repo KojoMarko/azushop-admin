@@ -22,7 +22,7 @@ declare module "next-auth" {
 }
 
 // Create NextAuth options
-const authOptions: NextAuthOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",

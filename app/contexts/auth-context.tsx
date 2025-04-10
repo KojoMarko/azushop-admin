@@ -22,8 +22,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true); // Set to true when the component mounts on the client
     try {
       const storedUser = localStorage.getItem("admin-user");
       if (storedUser) {
@@ -68,8 +70,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log("AuthProvider initialized. User:", user, "IsLoading:", isLoading);
   }, [user, isLoading]);
 
-  if (typeof window === "undefined") {
-    return <>{children}</>;
+  // Only render the provider on the client-side
+  if (!isClient) {
+    return null; // Or a loading indicator if you prefer
   }
 
   return <AuthContext.Provider value={{ user, login, logout, isLoading }}>{children}</AuthContext.Provider>

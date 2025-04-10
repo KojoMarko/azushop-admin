@@ -111,12 +111,7 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 };
 
+// Create handler
 const handler = NextAuth(authOptions);
 
-export const GET = async (req: Request, res: Response) => {
-  return handler(req, res);
-};
-
-export const POST = async (req: Request, res: Response) => {
-  return handler(req, res);
-};
+export { handler as GET, handler as POST };

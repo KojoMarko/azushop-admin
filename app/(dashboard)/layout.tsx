@@ -197,9 +197,7 @@ export default function DashboardRootLayout({
 }) {
   return (
     <SessionProvider>
-      <AuthProvider>
         <DashboardLayout>{children}</DashboardLayout>
-      </AuthProvider>
     </SessionProvider>
   );
 }

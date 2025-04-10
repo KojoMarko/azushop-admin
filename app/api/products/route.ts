@@ -9,6 +9,18 @@ import { NextAuthOptions } from 'next-auth'; // Import NextAuthOptions if needed
 // Mock database for demonstration purposes
 const products: any[] = [];
 
+//Get handler for fetching all products
+export async function GET(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+
+  if (!session) {
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  }
+
+  return NextResponse.json(products);
+}
+
+// POST handler for creating a new product
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions); // Get the session
 
@@ -27,6 +39,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// PUT handler for updating an existing product
 export async function PUT(req: NextRequest) {
   const session = await getServerSession(authOptions); // Get the session
 
@@ -51,6 +64,7 @@ export async function PUT(req: NextRequest) {
   }
 }
 
+// OPTIONS handler for handling preflight requests (CORS)
 export async function OPTIONS(req: NextRequest) {
   // Handle preflight requests for CORS if needed
   return new Response(null, {
@@ -62,32 +76,32 @@ export async function OPTIONS(req: NextRequest) {
   });
 }
 
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { method } = req;
+// export default function handler(req: NextApiRequest, res: NextApiResponse) {
+//   const { method } = req;
 
-  switch (method) {
-    case 'POST': {
-      // Add a new product
-      const newProduct = { id: Date.now().toString(), ...req.body };
-      products.push(newProduct);
-      return res.status(201).json(newProduct);
-    }
+//   switch (method) {
+//     case 'POST': {
+//       // Add a new product
+//       const newProduct = { id: Date.now().toString(), ...req.body };
+//       products.push(newProduct);
+//       return res.status(201).json(newProduct);
+//     }
 
-    case 'PUT': {
-      // Update an existing product
-      const { id, ...updatedFields } = req.body;
-      const productIndex = products.findIndex((product) => product.id === id);
+//     case 'PUT': {
+//       // Update an existing product
+//       const { id, ...updatedFields } = req.body;
+//       const productIndex = products.findIndex((product) => product.id === id);
 
-      if (productIndex === -1) {
-        return res.status(404).json({ message: 'Product not found' });
-      }
+//       if (productIndex === -1) {
+//         return res.status(404).json({ message: 'Product not found' });
+//       }
 
-      products[productIndex] = { ...products[productIndex], ...updatedFields };
-      return res.status(200).json(products[productIndex]);
-    }
+//       products[productIndex] = { ...products[productIndex], ...updatedFields };
+//       return res.status(200).json(products[productIndex]);
+//     }
 
-    default:
-      res.setHeader('Allow', ['POST', 'PUT']);
-      return res.status(405).end(`Method ${method} Not Allowed`);
-  }
-}
+//     default:
+//       res.setHeader('Allow', ['POST', 'PUT']);
+//       return res.status(405).end(`Method ${method} Not Allowed`);
+//   }
+// }

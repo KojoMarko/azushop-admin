@@ -38,15 +38,17 @@ export default function ProductsPage() {
         response.data.forEach((product: Product) => {
           addProduct(product);
         });
-        console.log("Products in Store after Fetch:", JSON.stringify(storedProducts, null, 2)); // Add this line
+        console.log("Products in Store after Fetch:", JSON.stringify(storedProducts, null, 2));
       } catch (error) {
         console.error("Error fetching products:", error);
       }
     };
 
-    fetchProducts();
-  }, [addProduct]); // Add addProduct to the dependency array
-
+    if (storedProducts.length === 0) { // Check if products are already in the store
+      fetchProducts();
+    }
+  }, [storedProducts, addProduct]);
+  
   // Filter products based on search query using the stored products
   const filteredProducts = storedProducts.filter(
     (product) =>

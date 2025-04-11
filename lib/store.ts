@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid"; // Import uuid for unique IDs
 
 export interface Product {
   id: string;
+  _id?: string;
   name: string;
   description: string;
   price: number;
@@ -15,6 +16,7 @@ export interface Product {
   specifications: Record<string, string>;
   createdAt: string;
   updatedAt: string;
+  __v?: number;
 }
 
 export interface Category {
@@ -153,16 +155,17 @@ export const useStore = create<StoreState>()(
       addProduct: (product) => {
         const now = new Date().toISOString();
         const newProduct: Product = {
-          id: uuidv4(), // Use uuid
+          id: product._id ? product._id.toString() : uuidv4(), // Use _id as ID if available, otherwise generate UUID
+          _id: product._id, // Keep the _id property
           ...product,
           createdAt: now,
           updatedAt: now,
         };
-
+  
         set((state) => ({
           products: [...state.products, newProduct],
         }));
-
+  
         get().checkLowInventory();
       },
 

@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { connectToDatabase } from "@/lib/mongodb";
 import Product from "@/models/Product";
+import { ObjectId } from 'mongodb'; // Import ObjectId from mongodb
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   await connectToDatabase();
@@ -25,13 +26,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       break;
 
-    case "PUT":
+      case "PUT":
       try {
         const { id, ...updateData } = req.body;
-        const updatedProduct = await Product.findByIdAndUpdate(id, updateData, { new: true });
+        const objectId = new ObjectId(id); // Convert the string ID to ObjectId
+        const updatedProduct = await Product.findByIdAndUpdate(objectId, updateData, { new: true });
         res.status(200).json(updatedProduct);
       } catch (error) {
-        res.status(500).json({ message: "Failed to update product." });
+        console.error("Error updating product:", error);
+        res.status(500).json({ message: "Failed to update product.", error: (error as any).message });
       }
       break;
 

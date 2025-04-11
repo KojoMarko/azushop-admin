@@ -35,14 +35,14 @@ export default function ProductsPage() {
     const fetchProducts = async () => {
       try {
         const response = await axios.get("/api/products");
-        response.data.forEach((product: Omit<Product, "createdAt" | "updatedAt">) => {
-          // Assuming your API returns the full product object including 'id'
-          addProduct(product); // Use the Zustand action to add products to the store
+        response.data.forEach((product: Product) => {
+          addProduct(product);
         });
+        console.log("Products in Store after Fetch:", JSON.stringify(storedProducts, null, 2)); // Add this line
       } catch (error) {
         console.error("Error fetching products:", error);
       }
-    }
+    };
 
     fetchProducts();
   }, [addProduct]); // Add addProduct to the dependency array

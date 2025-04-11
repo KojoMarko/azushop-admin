@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import axios from "axios"
 import Link from "next/link"
 import Image from "next/image"
-import { type Product } from "@/lib/store"
+import { type Product, useStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -27,29 +27,32 @@ import {
 import { Plus, MoreHorizontal, Search, Edit, Trash } from "lucide-react"
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
+  const { products: storedProducts, addProduct, deleteProduct: deleteProductFromStore } = useStore(); // Get products from store and actions
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get("/api/products")
-        setProducts(response.data)
+        const response = await axios.get("/api/products");
+        response.data.forEach((product: Omit<Product, "createdAt" | "updatedAt">) => {
+          // Assuming your API returns the full product object including 'id'
+          addProduct(product); // Use the Zustand action to add products to the store
+        });
       } catch (error) {
-        console.error("Error fetching products:", error)
+        console.error("Error fetching products:", error);
       }
     }
 
-    fetchProducts()
-  }, [])
+    fetchProducts();
+  }, [addProduct]); // Add addProduct to the dependency array
 
-  // Filter products based on search query
-  const filteredProducts = products.filter(
+  // Filter products based on search query using the stored products
+  const filteredProducts = storedProducts.filter(
     (product) =>
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  );
 
   // Handle product deletion
   const handleDeleteClick = (product: Product) => {
@@ -59,14 +62,14 @@ export default function ProductsPage() {
   const confirmDelete = async () => {
     if (productToDelete) {
       try {
-        await axios.delete(`/api/products?id=${productToDelete.id}`)
-        setProducts((prev) => prev.filter((p) => p.id !== productToDelete.id))
-        setProductToDelete(null)
+        await axios.delete(`/api/products?id=${productToDelete.id}`);
+        deleteProductFromStore(productToDelete.id); // Use the Zustand action to delete from the store
+        setProductToDelete(null);
       } catch (error) {
-        console.error("Error deleting product:", error)
+        console.error("Error deleting product:", error);
       }
     }
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -100,7 +103,7 @@ export default function ProductsPage() {
       {/* Products table */}
       {filteredProducts.length === 0 ? (
         <div className="text-center py-10 text-muted-foreground">
-          {products.length === 0 ? (
+          {storedProducts.length === 0 ? (
             <p>No products yet. Add your first product to get started.</p>
           ) : (
             <p>No products match your search.</p>
@@ -120,52 +123,55 @@ export default function ProductsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell>
-                    <div className="h-12 w-12 relative">
-                      <Image
-                        src={product.image || "/placeholder.svg?height=48&width=48"}
-                        alt={product.name}
-                        fill
-                        className="object-cover rounded-md"
-                      />
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium">{product.name}</TableCell>
-                  <TableCell>${product.price.toFixed(2)}</TableCell>
-                  <TableCell>
-                    <span className={product.inventory <= 5 ? "text-red-500 font-medium" : ""}>
-                      {product.inventory} units
-                    </span>
-                  </TableCell>
-                  <TableCell>{new Date(product.updatedAt).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <Link href={`/dashboard/products/edit/${product.id}`}>
-                          <DropdownMenuItem>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                        </Link>
-                        <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteClick(product)}>
-                          <Trash className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+            {filteredProducts.map((product) => { // Open curly brace here
+  console.log("Product ID for Edit Link:", product.id); // Debugging line
+  return ( // Add a return statement here
+    <TableRow key={product.id}>
+      <TableCell>
+        <div className="h-12 w-12 relative">
+          <Image
+            src={product.image || "/placeholder.svg?height=48&width=48"}
+            alt={product.name}
+            fill
+            className="object-cover rounded-md"
+          />
+        </div>
+      </TableCell>
+      <TableCell className="font-medium">{product.name}</TableCell>
+      <TableCell>${product.price.toFixed(2)}</TableCell>
+      <TableCell>
+        <span className={product.inventory <= 5 ? "text-red-500 font-medium" : ""}>
+          {product.inventory} units
+        </span>
+      </TableCell>
+      <TableCell>{new Date(product.updatedAt).toLocaleDateString()}</TableCell>
+      <TableCell>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">Open menu</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <Link href={`/dashboard/products/edit/${product.id}`}>
+              <DropdownMenuItem>
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+            </Link>
+            <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteClick(product)}>
+              <Trash className="mr-2 h-4 w-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
+    </TableRow>
+  ); // Close the return statement
+})}
             </TableBody>
           </Table>
         </div>

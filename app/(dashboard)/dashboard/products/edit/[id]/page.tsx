@@ -12,15 +12,23 @@ export default function EditProductPage() {
   const [product, setProduct] = useState<Product | undefined>(undefined)
   const [loading, setLoading] = useState(true)
 
+// Log the params object
+console.log("EditProductPage - Params:", params);
+
   useEffect(() => {
     if (params.id) {
-      const foundProduct = products.find((p) => p.id === params.id)
+      console.log("EditProductPage - Product ID from Params:", params.id);
+      console.log("EditProductPage - All Products in Store:", products);
+      const foundProduct = products.find((p) => p.id === params.id);  
 
       if (foundProduct) {
-        setProduct(foundProduct)
+        console.log("EditProductPage - Found Product:", foundProduct);
+        setProduct(foundProduct);
+
       } else {
+        console.log("EditProductPage - Product not found, ID:", params.id);
         // Product not found, redirect to products page
-        router.push("/dashboard/products")
+        router.push("/dashboard/products");
       }
     }
 
@@ -36,7 +44,7 @@ export default function EditProductPage() {
   }
 
   if (!product) {
-    return null
+   return <div>Product not found.</div>;
   }
 
   return (

@@ -247,57 +247,57 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     if (!validateForm()) {
       toast.error("Please fix the errors in the form.");
       return;
     }
-
-    let uploadedImageUrl = formData.image; // Keep existing image URL by default
-
-    // If a new file was selected, upload it
+  
+    let uploadedImageUrl = formData.image;
+  
     if (imageFile) {
-        const result = await uploadImage(imageFile);
-        if (!result) {
-            // Upload failed, error already shown by uploadImage function
-            return;
-        }
-        uploadedImageUrl = result; // Use the new image URL
+      const result = await uploadImage(imageFile);
+      if (!result) {
+        return;
+      }
+      uploadedImageUrl = result;
     }
-
-
+  
     try {
-      // Use correct types for price and inventory
       const productData = {
         name: formData.name.trim(),
-        description: formData.description, // Assuming RichTextEditor provides safe HTML or markdown
+        description: formData.description,
         price: parseFloat(formData.price),
         inventory: parseInt(formData.inventory, 10),
         categoryId: formData.categoryId,
-        subcategoryId: formData.subcategoryId || null, // Send null if empty
+        subcategoryId: formData.subcategoryId || undefined,
         brandId: formData.brandId,
         specifications: formData.specifications,
-        image: uploadedImageUrl, // Use the potentially updated image URL
+        image: uploadedImageUrl,
       };
-
+  
       if (isEditing && product) {
-        // Make sure your API can handle receiving 'id' in the payload for PUT
+        // Make the API call to update the database
         await axios.put("/api/products", { id: product.id, ...productData });
         toast.success(`Product "${productData.name}" has been updated successfully.`);
+  
+        // Update the Zustand store as well
+        const { updateProduct } = useStore.getState(); // Get the updateProduct action from the store
+        updateProduct(product.id, productData); // Dispatch the action to update the store
       } else {
         await axios.post("/api/products", productData);
         toast.success(`Product "${productData.name}" has been added successfully.`);
       }
-
-      router.push("/dashboard/products"); // Navigate back to product list
-      router.refresh(); // Optional: Force refresh of the product list page data
-
+  
+      router.push("/dashboard/products");
+      router.refresh();
+  
     } catch (error: any) {
       console.error("Error saving product:", error);
       const errorMessage = error.response?.data?.message || "There was an error saving the product.";
       toast.error(errorMessage);
     }
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">

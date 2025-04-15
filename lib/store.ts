@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid"; // Import uuid for unique IDs
+import axios from "axios";
 
 export interface Product {
   id: string;
@@ -198,15 +199,10 @@ export const useStore = create<StoreState>()(
       },
 
       // Category actions
-      addCategory: (category) => {
+      addCategory: async (category) => {
         const now = new Date().toISOString();
-        const newCategory: Category = {
-          id: uuidv4(), // Use uuid
-          ...category,
-          createdAt: now,
-          updatedAt: now,
-        };
-
+        const response = await axios.post("/api/categories", { ...category, createdAt: now, updatedAt: now });
+        const newCategory = response.data;
         set((state) => ({
           categories: [...state.categories, newCategory],
         }));
@@ -242,15 +238,10 @@ export const useStore = create<StoreState>()(
       },
 
       // Subcategory actions
-      addSubcategory: (subcategory) => {
+      addSubcategory: async (subcategory) => {
         const now = new Date().toISOString();
-        const newSubcategory: Subcategory = {
-          id: uuidv4(), // Use uuid
-          ...subcategory,
-          createdAt: now,
-          updatedAt: now,
-        };
-
+        const response = await axios.post("/api/subcategories", { ...subcategory, createdAt: now, updatedAt: now });
+        const newSubcategory = response.data;
         set((state) => ({
           subcategories: [...state.subcategories, newSubcategory],
         }));
@@ -285,15 +276,10 @@ export const useStore = create<StoreState>()(
       },
 
       // Brand actions
-      addBrand: (brand) => {
+      addBrand: async (brand) => {
         const now = new Date().toISOString();
-        const newBrand: Brand = {
-          id: uuidv4(), // Use uuid
-          ...brand,
-          createdAt: now,
-          updatedAt: now,
-        };
-
+        const response = await axios.post("/api/brands", { ...brand, createdAt: now, updatedAt: now });
+        const newBrand = response.data;
         set((state) => ({
           brands: [...state.brands, newBrand],
         }));
@@ -483,3 +469,19 @@ export const useStore = create<StoreState>()(
     },
   ),
 );
+
+// Utility functions to fetch and set all entities from the API
+export async function fetchAndSetCategories() {
+  const response = await axios.get("/api/categories");
+  useStore.setState({ categories: response.data });
+}
+
+export async function fetchAndSetBrands() {
+  const response = await axios.get("/api/brands");
+  useStore.setState({ brands: response.data });
+}
+
+export async function fetchAndSetSubcategories() {
+  const response = await axios.get("/api/subcategories");
+  useStore.setState({ subcategories: response.data });
+}

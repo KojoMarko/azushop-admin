@@ -36,7 +36,7 @@ export default function ProductsPage() {
       try {
         const response = await axios.get("/api/products");
         response.data.forEach((product: Product) => {
-          addProduct(product);
+          addProduct(product); 
         });
         console.log("Products in Store after Fetch:", JSON.stringify(storedProducts, null, 2));
       } catch (error) {

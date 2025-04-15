@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useStore, type Brand } from "@/lib/store"
+import { useState, useEffect } from "react" // Import useEffect
+import { useStore, type Brand, fetchAndSetBrands } from "@/lib/store"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,49 +19,58 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Plus, Pencil, Trash } from "lucide-react"
 
 export default function BrandsPage() {
-  const { brands, products, addBrand, updateBrand, deleteBrand } = useStore()
-  const [brandName, setBrandName] = useState("")
-  const [editingBrand, setEditingBrand] = useState<Brand | null>(null)
-  const [brandToDelete, setBrandToDelete] = useState<Brand | null>(null)
+  const { brands, products, addBrand, updateBrand, deleteBrand } = useStore();
+  const [brandName, setBrandName] = useState("");
+  const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
+  const [brandToDelete, setBrandToDelete] = useState<Brand | null>(null);
+
+  useEffect(() => {
+    console.log("BrandsPage useEffect: Fetching brands...");
+    fetchAndSetBrands();
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   // Handle brand actions
-  const handleAddBrand = () => {
+  const handleAddBrand = async () => {
     <Toaster />
-    if (!brandName.trim()) return
-
-    addBrand({ name: brandName.trim() })
-    setBrandName("")
-
-    toast("Brand added successfully.")
-  }
-
-  const handleUpdateBrand = () => {
-    if (!editingBrand || !brandName.trim()) return
-
-    updateBrand(editingBrand.id, { name: brandName.trim() })
-    setEditingBrand(null)
-    setBrandName("")
-
-    toast("Brand updated successfully.")
-  }
-
-  const handleDeleteBrand = () => {
-    if (!brandToDelete) return
-
-    // Check if brand has products
-    const hasProducts = products.some((product) => product.brandId === brandToDelete.id)
-
-    if (hasProducts) {
-      toast("Cannot delete brand: This brand has associated products.")
-      setBrandToDelete(null)
-      return
+    if (!brandName.trim()) return;
+    try {
+      await addBrand({ name: brandName.trim() });
+      setBrandName("");
+      toast("Brand added successfully.");
+    } catch (error: any) {
+      toast.error(`Failed to add brand: ${error.message || "An unexpected error occurred."}`);
     }
+  };
 
-    deleteBrand(brandToDelete.id)
-    setBrandToDelete(null)
+  const handleUpdateBrand = async () => {
+    if (!editingBrand || !brandName.trim()) return;
+    try {
+      await updateBrand(editingBrand.id, { name: brandName.trim() });
+      setEditingBrand(null);
+      setBrandName("");
+      toast("Brand updated successfully.");
+    } catch (error: any) {
+      toast.error(`Failed to update brand: ${error.message || "An unexpected error occurred."}`);
+    }
+  };
 
-    toast(`${brandToDelete.name} has been deleted.`)
-  }
+  const handleDeleteBrand = async () => {
+    if (!brandToDelete) return;
+    // Check if brand has products
+    const hasProducts = products.some((product) => product.brandId === brandToDelete.id);
+    if (hasProducts) {
+      toast("Cannot delete brand: This brand has associated products.");
+      setBrandToDelete(null);
+      return;
+    }
+    try {
+      await deleteBrand(brandToDelete.id);
+      setBrandToDelete(null);
+      toast(`${brandToDelete.name} has been deleted.`);
+    } catch (error: any) {
+      toast.error(`Failed to delete brand: ${error.message || "An unexpected error occurred."}`);
+    }
+  };
 
   const startEditBrand = (brand: Brand) => {
     setEditingBrand(brand)
@@ -185,4 +194,3 @@ export default function BrandsPage() {
     </div>
   )
 }
-

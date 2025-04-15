@@ -204,7 +204,13 @@ export const useStore = create<StoreState>()(
         const response = await axios.post("/api/categories", { ...category, createdAt: now, updatedAt: now });
         const newCategory = response.data;
         set((state) => ({
-          categories: [...state.categories, newCategory],
+          categories: [
+            ...state.categories,
+            {
+              ...newCategory,
+              id: newCategory._id?.toString() || newCategory.id,
+            },
+          ],
         }));
       },
 
@@ -473,15 +479,27 @@ export const useStore = create<StoreState>()(
 // Utility functions to fetch and set all entities from the API
 export async function fetchAndSetCategories() {
   const response = await axios.get("/api/categories");
-  useStore.setState({ categories: response.data });
+  const categories = response.data.map((cat: any) => ({
+    ...cat,
+    id: cat._id?.toString() || cat.id,
+  }));
+  useStore.setState({ categories });
 }
 
 export async function fetchAndSetBrands() {
   const response = await axios.get("/api/brands");
-  useStore.setState({ brands: response.data });
+  const brands = response.data.map((brand: any) => ({
+    ...brand,
+    id: brand._id?.toString() || brand.id,
+  }));
+  useStore.setState({ brands });
 }
 
 export async function fetchAndSetSubcategories() {
   const response = await axios.get("/api/subcategories");
-  useStore.setState({ subcategories: response.data });
+  const subcategories = response.data.map((sub: any) => ({
+    ...sub,
+    id: sub._id?.toString() || sub.id,
+  }));
+  useStore.setState({ subcategories });
 }

@@ -154,18 +154,23 @@ export const useStore = create<StoreState>()(
       // Product actions
       addProduct: (product) => {
         const now = new Date().toISOString();
-        const newProduct: Product = {
-          id: product._id ? product._id.toString() : uuidv4(), // Use _id as ID if available, otherwise generate UUID
-          _id: product._id, // Keep the _id property
-          ...product,
-          createdAt: now,
-          updatedAt: now,
-        };
-  
-        set((state) => ({
-          products: [...state.products, newProduct],
-        }));
-  
+        const id = product._id ? product._id.toString() : uuidv4();
+        // Prevent duplicates: only add if not already present
+        set((state) => {
+          if (state.products.some((p) => p.id === id)) {
+            return {};
+          }
+          const newProduct: Product = {
+            id,
+            _id: product._id,
+            ...product,
+            createdAt: now,
+            updatedAt: now,
+          };
+          return {
+            products: [...state.products, newProduct],
+          };
+        });
         get().checkLowInventory();
       },
 

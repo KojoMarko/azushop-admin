@@ -56,6 +56,9 @@ export default function ProductsPage() {
       product.description.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
+  // Log product IDs to check for duplicates
+  console.log('Product IDs:', filteredProducts.map(p => p.id));
+
   // Handle product deletion
   const handleDeleteClick = (product: Product) => {
     setProductToDelete(product)
@@ -125,10 +128,10 @@ export default function ProductsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-            {filteredProducts.map((product) => { // Open curly brace here
+            {filteredProducts.map((product, idx) => {
   console.log("Product ID for Edit Link:", product.id); // Debugging line
-  return ( // Add a return statement here
-    <TableRow key={product.id}>
+  return (
+    <TableRow key={`${product.id}-${idx}`}>
       <TableCell>
         <div className="h-12 w-12 relative">
           <Image
@@ -172,7 +175,7 @@ export default function ProductsPage() {
         </DropdownMenu>
       </TableCell>
     </TableRow>
-  ); // Close the return statement
+  );
 })}
             </TableBody>
           </Table>

@@ -10,6 +10,7 @@ import {
   createBrand,
   // fetchProducts, // Optional future
   // createProduct, // Optional future
+  updateSubcategoryApi // Import the new API function
 } from "@/lib/api";
 
 export interface Product {
@@ -120,7 +121,7 @@ interface StoreState {
 
   // Subcategory actions
   addSubcategory: (subcategory: Omit<Subcategory, "id" | "createdAt" | "updatedAt">) => Promise<void>;
-  updateSubcategory: (id: string, subcategory: Partial<Omit<Subcategory, "id" | "createdAt" | "updatedAt">>) => void;
+  updateSubcategory: (id: string, subcategory: Partial<Omit<Subcategory, "id" | "createdAt" | "updatedAt">>) => Promise<void>;
   deleteSubcategory: (id: string) => void;
   setSubcategories: (subcategories: Subcategory[]) => void; // Add the setSubcategories action
 
@@ -269,18 +270,26 @@ export const useStore = create<StoreState>()(
         }
       },
 
-      updateSubcategory: (id, updatedFields) => {
-        set((state) => ({
-          subcategories: state.subcategories.map((subcategory) =>
-            subcategory.id === id
-              ? {
-                  ...subcategory,
-                  ...updatedFields,
-                  updatedAt: new Date().toISOString(),
-                }
-              : subcategory,
-          ),
-        }));
+      updateSubcategory: async (id, updatedFields) => {
+        try {
+          const now = new Date().toISOString();
+          const updatedSubcategory = await updateSubcategoryApi(id, { ...updatedFields, updatedAt: now });
+
+          set((state) => ({
+            subcategories: state.subcategories.map((subcategory) =>
+              subcategory.id === id
+                ? {
+                    ...subcategory,
+                    ...updatedFields,
+                    updatedAt: now,
+                  }
+                : subcategory,
+            ),
+          }));
+        } catch (error) {
+          console.error("Error updating subcategory:", error);
+          // Optionally handle the error (e.g., display a notification)
+        }
       },
 
       deleteSubcategory: (id) => {

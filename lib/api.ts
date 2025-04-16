@@ -41,6 +41,14 @@ export const createSubcategory = async (subcategory: Partial<Subcategory>) => {
   };
 };
 
+export const updateSubcategoryApi = async (id: string, subcategory: Partial<Subcategory>) => {
+  const { data } = await axios.put(`/api/subcategories/${id}`, subcategory);
+  return {
+    ...data,
+    id: data._id?.toString() || data.id,
+  };
+};
+
 // ======================
 // Brands
 // ======================

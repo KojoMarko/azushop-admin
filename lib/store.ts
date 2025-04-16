@@ -1,7 +1,16 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { v4 as uuidv4 } from "uuid"; // Import uuid for unique IDs
-import axios from "axios";
+import {
+  fetchCategories,
+  createCategory,
+  fetchSubcategories,
+  createSubcategory,
+  fetchBrands,
+  createBrand,
+  // fetchProducts, // Optional future
+  // createProduct, // Optional future
+} from "@/lib/api";
 
 export interface Product {
   id: string;
@@ -104,19 +113,22 @@ interface StoreState {
   deleteProduct: (id: string) => void;
 
   // Category actions
-  addCategory: (category: Omit<Category, "id" | "createdAt" | "updatedAt">) => void;
+  addCategory: (category: Omit<Category, "id" | "createdAt" | "updatedAt">) => Promise<void>;
   updateCategory: (id: string, category: Partial<Omit<Category, "id" | "createdAt" | "updatedAt">>) => void;
   deleteCategory: (id: string) => void;
+  setCategories: (categories: Category[]) => void; // Add the setCategories action
 
   // Subcategory actions
-  addSubcategory: (subcategory: Omit<Subcategory, "id" | "createdAt" | "updatedAt">) => void;
+  addSubcategory: (subcategory: Omit<Subcategory, "id" | "createdAt" | "updatedAt">) => Promise<void>;
   updateSubcategory: (id: string, subcategory: Partial<Omit<Subcategory, "id" | "createdAt" | "updatedAt">>) => void;
   deleteSubcategory: (id: string) => void;
+  setSubcategories: (subcategories: Subcategory[]) => void; // Add the setSubcategories action
 
   // Brand actions
-  addBrand: (brand: Omit<Brand, "id" | "createdAt" | "updatedAt">) => void;
+  addBrand: (brand: Omit<Brand, "id" | "createdAt" | "updatedAt">) => Promise<void>;
   updateBrand: (id: string, brand: Partial<Omit<Brand, "id" | "createdAt" | "updatedAt">>) => void;
   deleteBrand: (id: string) => void;
+  setBrands: (brands: Brand[]) => void; // Add the setBrands action
 
   // Order actions
   addOrder: (order: Omit<Order, "id" | "createdAt" | "updatedAt">) => void;
@@ -200,18 +212,16 @@ export const useStore = create<StoreState>()(
 
       // Category actions
       addCategory: async (category) => {
-        const now = new Date().toISOString();
-        const response = await axios.post("/api/categories", { ...category, createdAt: now, updatedAt: now });
-        const newCategory = response.data;
-        set((state) => ({
-          categories: [
-            ...state.categories,
-            {
-              ...newCategory,
-              id: newCategory._id?.toString() || newCategory.id,
-            },
-          ],
-        }));
+        try {
+          const now = new Date().toISOString();
+          const newCategory = await createCategory({ ...category, createdAt: now, updatedAt: now });
+          set((state) => ({
+            categories: [...state.categories, newCategory],
+          }));
+        } catch (error) {
+          console.error("Error creating category:", error);
+          // Optionally handle the error (e.g., display a notification)
+        }
       },
 
       updateCategory: (id, updatedFields) => {
@@ -243,14 +253,20 @@ export const useStore = create<StoreState>()(
         }));
       },
 
+      setCategories: (newCategories: Category[]) => set({ categories: newCategories }), // Implementation of setCategories
+
       // Subcategory actions
       addSubcategory: async (subcategory) => {
-        const now = new Date().toISOString();
-        const response = await axios.post("/api/subcategories", { ...subcategory, createdAt: now, updatedAt: now });
-        const newSubcategory = response.data;
-        set((state) => ({
-          subcategories: [...state.subcategories, newSubcategory],
-        }));
+        try {
+          const now = new Date().toISOString();
+          const newSubcategory = await createSubcategory({ ...subcategory, createdAt: now, updatedAt: now });
+          set((state) => ({
+            subcategories: [...state.subcategories, newSubcategory],
+          }));
+        } catch (error) {
+          console.error("Error creating subcategory:", error);
+          // Optionally handle the error
+        }
       },
 
       updateSubcategory: (id, updatedFields) => {
@@ -281,14 +297,20 @@ export const useStore = create<StoreState>()(
         }));
       },
 
+      setSubcategories: (newSubcategories: Subcategory[]) => set({ subcategories: newSubcategories }), // Implementation of setSubcategories
+
       // Brand actions
       addBrand: async (brand) => {
-        const now = new Date().toISOString();
-        const response = await axios.post("/api/brands", { ...brand, createdAt: now, updatedAt: now });
-        const newBrand = response.data;
-        set((state) => ({
-          brands: [...state.brands, newBrand],
-        }));
+        try {
+          const now = new Date().toISOString();
+          const newBrand = await createBrand({ ...brand, createdAt: now, updatedAt: now });
+          set((state) => ({
+            brands: [...state.brands, newBrand],
+          }));
+        } catch (error) {
+          console.error("Error creating brand:", error);
+          // Optionally handle the error
+        }
       },
 
       updateBrand: (id, updatedFields) => {
@@ -318,6 +340,8 @@ export const useStore = create<StoreState>()(
           brands: state.brands.filter((brand) => brand.id !== id),
         }));
       },
+
+      setBrands: (newBrands: Brand[]) => set({ brands: newBrands }), // Implementation of setBrands
 
       // Order actions
       addOrder: (order) => {
@@ -471,35 +495,7 @@ export const useStore = create<StoreState>()(
       },
     }),
     {
-      name: "ecommerce-admin-store",
+      name: "Azushop Admin Store", // Name of the storage (must be unique)
     },
   ),
 );
-
-// Utility functions to fetch and set all entities from the API
-export async function fetchAndSetCategories() {
-  const response = await axios.get("/api/categories");
-  const categories = response.data.map((cat: any) => ({
-    ...cat,
-    id: cat._id?.toString() || cat.id,
-  }));
-  useStore.setState({ categories });
-}
-
-export async function fetchAndSetBrands() {
-  const response = await axios.get("/api/brands");
-  const brands = response.data.map((brand: any) => ({
-    ...brand,
-    id: brand._id?.toString() || brand.id,
-  }));
-  useStore.setState({ brands });
-}
-
-export async function fetchAndSetSubcategories() {
-  const response = await axios.get("/api/subcategories");
-  const subcategories = response.data.map((sub: any) => ({
-    ...sub,
-    id: sub._id?.toString() || sub.id,
-  }));
-  useStore.setState({ subcategories });
-}

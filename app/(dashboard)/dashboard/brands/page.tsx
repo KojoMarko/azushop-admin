@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react" // Import useEffect
-import { useStore, type Brand, fetchAndSetBrands } from "@/lib/store"
+import { useStore, type Brand } from "@/lib/store" // Remove fetchAndSetBrands import
+import { fetchBrands } from "@/lib/api"; // Import fetchBrands from the API file
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,15 +20,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Plus, Pencil, Trash } from "lucide-react"
 
 export default function BrandsPage() {
-  const { brands, products, addBrand, updateBrand, deleteBrand } = useStore();
+  const { brands, products, addBrand, updateBrand, deleteBrand, setBrands } = useStore(); // Assuming you might want a direct setter
   const [brandName, setBrandName] = useState("");
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
   const [brandToDelete, setBrandToDelete] = useState<Brand | null>(null);
 
   useEffect(() => {
     console.log("BrandsPage useEffect: Fetching brands...");
-    fetchAndSetBrands();
-  }, []); // Empty dependency array ensures this runs only once on mount
+    const loadBrands = async () => {
+      try {
+        const fetchedBrands = await fetchBrands();
+        setBrands(fetchedBrands); // Use the setter to update the store
+      } catch (error: any) {
+        console.error("Error fetching brands:", error);
+        toast.error(`Failed to fetch brands: ${error.message || "An unexpected error occurred."}`);
+      }
+    };
+
+    loadBrands();
+  }, [setBrands]); // Include setBrands in the dependency array if it's stable
 
   // Handle brand actions
   const handleAddBrand = async () => {

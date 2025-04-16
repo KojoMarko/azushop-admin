@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react" // Import useEffect
 import { useStore, type Category, type Subcategory } from "@/lib/store"
+import { fetchCategories, fetchSubcategories } from "@/lib/api"; // Import API functions
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -32,6 +33,8 @@ export default function CategoriesPage() {
     addSubcategory,
     updateSubcategory,
     deleteSubcategory,
+    setCategories, // Assuming you'll add this to your store
+    setSubcategories, // Assuming you'll add this to your store
   } = useStore()
 
   // Category state
@@ -45,27 +48,51 @@ export default function CategoriesPage() {
   const [editingSubcategory, setEditingSubcategory] = useState<Subcategory | null>(null)
   const [subcategoryToDelete, setSubcategoryToDelete] = useState<Subcategory | null>(null)
 
+  useEffect(() => {
+    console.log("CategoriesPage useEffect: Fetching categories and subcategories...");
+    const loadCategoriesAndSubcategories = async () => {
+      try {
+        const fetchedCategories = await fetchCategories();
+        setCategories(fetchedCategories); // Update categories in the store
+
+        const fetchedSubcategories = await fetchSubcategories();
+        setSubcategories(fetchedSubcategories); // Update subcategories in the store
+      } catch (error: any) {
+        console.error("Error fetching categories or subcategories:", error);
+        toast.error(`Failed to fetch categories or subcategories: ${error.message || "An unexpected error occurred."}`);
+      }
+    };
+
+    loadCategoriesAndSubcategories();
+  }, [setCategories, setSubcategories]); // Include setters in the dependency array
+
   // Handle category actions
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => { // Make handler async
     if (!categoryName.trim()) return
 
-    addCategory({ name: categoryName.trim() })
-    setCategoryName("")
-
-    toast(`${categoryName} has been added successfully.`)
+    try {
+      await addCategory({ name: categoryName.trim() });
+      setCategoryName("");
+      toast(`${categoryName} has been added successfully.`);
+    } catch (error: any) {
+      toast.error(`Failed to add category: ${error.message || "An unexpected error occurred."}`);
+    }
   }
 
-  const handleUpdateCategory = () => {
+  const handleUpdateCategory = async () => { // Make handler async
     if (!editingCategory || !categoryName.trim()) return
 
-    updateCategory(editingCategory.id, { name: categoryName.trim() })
-    setEditingCategory(null)
-    setCategoryName("")
-
-    toast(`Category has been updated successfully.`)
+    try {
+      await updateCategory(editingCategory.id, { name: categoryName.trim() });
+      setEditingCategory(null);
+      setCategoryName("");
+      toast(`Category has been updated successfully.`);
+    } catch (error: any) {
+      toast.error(`Failed to update category: ${error.message || "An unexpected error occurred."}`);
+    }
   }
 
-  const handleDeleteCategory = () => {
+  const handleDeleteCategory = async () => { // Make handler async
     if (!categoryToDelete) return
 
     // Check if category has subcategories or products
@@ -78,10 +105,13 @@ export default function CategoriesPage() {
       return
     }
 
-    deleteCategory(categoryToDelete.id)
-    setCategoryToDelete(null)
-
-    toast(`${categoryToDelete.name} has been deleted.`)
+    try {
+      await deleteCategory(categoryToDelete.id);
+      setCategoryToDelete(null);
+      toast(`${categoryToDelete.name} has been deleted.`);
+    } catch (error: any) {
+      toast.error(`Failed to delete category: ${error.message || "An unexpected error occurred."}`);
+    }
   }
 
   const startEditCategory = (category: Category) => {
@@ -90,34 +120,40 @@ export default function CategoriesPage() {
   }
 
   // Handle subcategory actions
-  const handleAddSubcategory = () => {
+  const handleAddSubcategory = async () => { // Make handler async
     if (!subcategoryName.trim() || !subcategoryParent) return
 
-    addSubcategory({
-      name: subcategoryName.trim(),
-      categoryId: subcategoryParent,
-    })
-    setSubcategoryName("")
-    setSubcategoryParent("")
-
-    toast(`${subcategoryName} has been added successfully.`)
+    try {
+      await addSubcategory({
+        name: subcategoryName.trim(),
+        categoryId: subcategoryParent,
+      });
+      setSubcategoryName("");
+      setSubcategoryParent("");
+      toast(`${subcategoryName} has been added successfully.`);
+    } catch (error: any) {
+      toast.error(`Failed to add subcategory: ${error.message || "An unexpected error occurred."}`);
+    }
   }
 
-  const handleUpdateSubcategory = () => {
+  const handleUpdateSubcategory = async () => { // Make handler async
     if (!editingSubcategory || !subcategoryName.trim()) return
 
-    updateSubcategory(editingSubcategory.id, {
-      name: subcategoryName.trim(),
-      categoryId: subcategoryParent || editingSubcategory.categoryId,
-    })
-    setEditingSubcategory(null)
-    setSubcategoryName("")
-    setSubcategoryParent("")
-
-    toast(`Subcategory has been updated successfully.`)
+    try {
+      await updateSubcategory(editingSubcategory.id, {
+        name: subcategoryName.trim(),
+        categoryId: subcategoryParent || editingSubcategory.categoryId,
+      });
+      setEditingSubcategory(null);
+      setSubcategoryName("");
+      setSubcategoryParent("");
+      toast(`Subcategory has been updated successfully.`);
+    } catch (error: any) {
+      toast.error(`Failed to update subcategory: ${error.message || "An unexpected error occurred."}`);
+    }
   }
 
-  const handleDeleteSubcategory = () => {
+  const handleDeleteSubcategory = async () => { // Make handler async
     if (!subcategoryToDelete) return
 
     // Check if subcategory has products
@@ -129,10 +165,13 @@ export default function CategoriesPage() {
       return
     }
 
-    deleteSubcategory(subcategoryToDelete.id)
-    setSubcategoryToDelete(null)
-
-    toast(`${subcategoryToDelete.name} has been deleted.`)
+    try {
+      await deleteSubcategory(subcategoryToDelete.id);
+      setSubcategoryToDelete(null);
+      toast(`${subcategoryToDelete.name} has been deleted.`);
+    } catch (error: any) {
+      toast.error(`Failed to delete subcategory: ${error.message || "An unexpected error occurred."}`);
+    }
   }
 
   const startEditSubcategory = (subcategory: Subcategory) => {
@@ -445,4 +484,3 @@ export default function CategoriesPage() {
     </div>
   )
 }
-

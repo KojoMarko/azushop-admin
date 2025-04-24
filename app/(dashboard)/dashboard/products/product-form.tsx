@@ -247,14 +247,14 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-  
+
     if (!validateForm()) {
       toast.error("Please fix the errors in the form.");
       return;
     }
-  
+
     let uploadedImageUrl = formData.image;
-  
+
     if (imageFile) {
       const result = await uploadImage(imageFile);
       if (!result) {
@@ -262,7 +262,7 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
       }
       uploadedImageUrl = result;
     }
-  
+
     try {
       const productData = {
         name: formData.name.trim(),
@@ -275,12 +275,12 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
         specifications: formData.specifications,
         image: uploadedImageUrl,
       };
-  
+
       if (isEditing && product) {
         // Make the API call to update the database
-        await axios.put("/api/products", { id: product.id, ...productData });
+        await axios.put(`/api/products/${product.id}`, productData); // Updated endpoint to include product ID
         toast.success(`Product "${productData.name}" has been updated successfully.`);
-  
+
         // Update the Zustand store as well
         const { updateProduct } = useStore.getState(); // Get the updateProduct action from the store
         updateProduct(product.id, productData); // Dispatch the action to update the store
@@ -288,10 +288,10 @@ export default function ProductForm({ product, isEditing = false }: ProductFormP
         await axios.post("/api/products", productData);
         toast.success(`Product "${productData.name}" has been added successfully.`);
       }
-  
+
       router.push("/dashboard/products");
       router.refresh();
-  
+
     } catch (error: any) {
       console.error("Error saving product:", error);
       const errorMessage = error.response?.data?.message || "There was an error saving the product.";

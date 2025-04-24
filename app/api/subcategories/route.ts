@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/mongodb';
-import Subcategory from '../../../models/Subcategory';
+import Subcategory from '@/models/Subcategory';
 
 export async function GET() {
   await db.connect();
